@@ -1,0 +1,11 @@
+node_modules/
+.env
+uploads/
+dist/
+build/
+*.log
+.DS_Store
+Thumbs.db
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
