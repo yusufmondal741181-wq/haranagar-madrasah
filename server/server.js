@@ -44,13 +44,7 @@ app.use('/api/settings', require('../Routes/settingsRoutes'));
 app.use('/api/activity', require('../Routes/activityRoutes'));
 app.use('/api/dashboard', require('../Routes/dashboardRoutes'));
 
-// Serve Frontend Build in Production
-if (process.env.NODE_ENV === 'production') {
-  app.use(express.static(path.join(__dirname, '../client/dist')));
-  app.get('*', (req, res) => {
-    res.sendFile(path.resolve(__dirname, '../client/dist', 'index.html'));
-  });
-}
+
 
 // Global Error Handler
 app.use((err, req, res, next) => {
