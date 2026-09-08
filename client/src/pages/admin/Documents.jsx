@@ -66,6 +66,37 @@ export default function Documents() {
       alert(err.error || 'Document upload error');
     }
   };
+  const handleDownload = async (id, fileName) => {
+  try {
+    const res = await fetch(
+      `${import.meta.env.VITE_API_URL}/documents/download/${id}`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      return alert(data.error || 'Download failed');
+    }
+
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fileName || 'document';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+
+    window.URL.revokeObjectURL(url);
+  } catch (error) {
+    alert('Download failed');
+  }
+};
 
   const handleDelete = async (id, title) => {
     if (!window.confirm(`Delete document "${title}" permanently?`)) return;
@@ -117,15 +148,15 @@ export default function Documents() {
                   <td>{d.uploader_name || 'Staff'}</td>
                   <td>{d.created_at.split(' ')[0]}</td>
                   <td>
-                    <div style={{ display: 'flex', gap: '0.5rem' }}>
-                      <a
-                       href={`${import.meta.env.VITE_API_URL}/documents/download/${d.id}`}
-                        download
-                        className="btn btn-secondary"
-                        style={{ padding: '0.3rem 0.6rem' }}
-                      >
-                        <Download size={14} />
-                      </a>
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>                         
+                      <button
+  onClick={() => handleDownload(d.id, d.file_name)}
+  className="btn btn-secondary"
+  style={{ padding: '0.3rem 0.6rem' }}
+>
+  <Download size={14} />
+</button>
+                      
                       <button
                         onClick={() => handleDelete(d.id, d.title)}
                         className="btn btn-danger"
