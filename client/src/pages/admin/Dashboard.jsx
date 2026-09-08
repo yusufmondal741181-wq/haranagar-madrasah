@@ -15,7 +15,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('/api/dashboard/overview', {
+    fetch(`${import.meta.env.VITE_API_URL}/dashboard/overview`, {
       headers: { Authorization: `Bearer ${token}` }
     })
       .then(res => res.json())
