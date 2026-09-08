@@ -24,7 +24,7 @@ export default function Documents() {
   const [file, setFile] = useState(null);
 
   const fetchDocuments = async () => {
-    const res = await fetch('/api/documents', {
+   const res = await fetch(`${import.meta.env.VITE_API_URL}/documents`, {
       headers: { Authorization: `Bearer ${token}` }
     });
     if (res.ok) {
