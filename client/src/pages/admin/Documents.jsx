@@ -119,7 +119,7 @@ export default function Documents() {
                   <td>
                     <div style={{ display: 'flex', gap: '0.5rem' }}>
                       <a
-                        href={`/api/documents/download/${d.id}`}
+                       href={`${import.meta.env.VITE_API_URL}/documents/download/${d.id}`}
                         download
                         className="btn btn-secondary"
                         style={{ padding: '0.3rem 0.6rem' }}
