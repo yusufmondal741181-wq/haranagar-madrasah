@@ -25,7 +25,7 @@ export default function Documents() {
     fetch(url)
       .then(res => res.json())
       .then(data => {
-        setDocuments(data.documents);
+        setDocuments(data);
         setLoading(false);
       })
       .catch(err => {
@@ -87,7 +87,7 @@ export default function Documents() {
                   <td><span className="badge badge-warning">{doc.file_type}</span></td>
                   <td>
                     <a
-                      href={`/api/documents/download/${doc.id}`}
+                     href={`/api/documents/download/${doc.id}`}
                       download
                       className="btn btn-secondary"
                       style={{ padding: '0.35rem 0.75rem', fontSize: '0.8rem' }}
