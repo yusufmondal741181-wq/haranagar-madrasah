@@ -47,7 +47,7 @@ export default function Documents() {
     formData.append('description', description);
     formData.append('academic_session', session);
     formData.append('is_public', isPublic ? '1' : '0');
-    formData.append('file', file);
+    formData.append('document', file);
 
     const res = await fetch(`${import.meta.env.VITE_API_URL}/documents`, {
       method: 'POST',
