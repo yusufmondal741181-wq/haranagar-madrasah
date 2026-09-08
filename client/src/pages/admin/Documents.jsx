@@ -49,7 +49,7 @@ export default function Documents() {
     formData.append('is_public', isPublic ? '1' : '0');
     formData.append('file', file);
 
-    const res = await fetch('/api/documents', {
+    const res = await fetch(`${import.meta.env.VITE_API_URL}/documents`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}` },
       body: formData
