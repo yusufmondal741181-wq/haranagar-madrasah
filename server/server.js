@@ -30,7 +30,7 @@ app.use(express.json({ limit: '15mb' }));
 app.use(express.urlencoded({ extended: true, limit: '15mb' }));
 
 // Static Public Uploads (Private uploads are accessed via protected controller download route)
-app.use('/uploads/public', express.static(path.join(__dirname, 'uploads/public')));
+app.use('/uploads/public', express.static(path.join(__dirname, '../uploads/public')));
 
 // API Routes
 app.use('/api/public', require('../Routes/publicRoutes'));

@@ -50,7 +50,7 @@ export default function Notices() {
               {notice.attachment && (
                 <div>
                   <a
-                    href={`/uploads/public/${notice.attachment}`}
+                  href={`${window.location.hostname === 'localhost' ? 'http://localhost:5000' : 'https://haranagar-madrasah.onrender.com'}/uploads/public/attachments/${notice.attachment}`}
                     download
                     className="btn btn-secondary"
                     style={{ fontSize: '0.85rem' }}
