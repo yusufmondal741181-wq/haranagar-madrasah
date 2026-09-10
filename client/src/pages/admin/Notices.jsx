@@ -14,7 +14,7 @@ export default function Notices() {
   const [file, setFile] = useState(null);
 
   const fetchNotices = async () => {
-    const res = await fetch('/api/notices', {
+    const res = await fetch('https://haranagar-madrasah.onrender.com/api/notices', {
       headers: { Authorization: `Bearer ${token}` }
     });
     if (res.ok) {
