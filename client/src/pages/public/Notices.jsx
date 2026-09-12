@@ -6,7 +6,15 @@ export default function Notices() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('/api/public/notices')
+    const apiBase = window.location.hostname === 'localhost'
+  ? 'http://localhost:5000'
+  : 'https://haranagar-madrasah.onrender.com';
+
+fetch(`${apiBase}/api/public/notices`)
+
+
+
+
       .then(res => res.json())
       .then(data => {
     setNotices(data.notices || []);
