@@ -35,12 +35,24 @@ export default function Notices() {
     formData.append('publish_date', publishDate);
     formData.append('published', isPublished ? 1 : 0);
     if (file) formData.append('attachment', file);
+const apiBase = window.location.hostname === 'localhost'
+  ? 'http://localhost:5000'
+  : 'https://haranagar-madrasah.onrender.com';
 
-    const res = await fetch('/api/notices', {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${token}` },
-      body: formData
-    });
+const res = await fetch(`${apiBase}/api/notices`, {
+  method: 'POST',
+  headers: { Authorization: `Bearer ${token}` },
+  body: formData
+});
+   
+
+
+
+
+
+
+
+
 
     if (res.ok) {
       setIsModalOpen(false);
