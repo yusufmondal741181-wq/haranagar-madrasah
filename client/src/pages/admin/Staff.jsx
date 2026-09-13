@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useContext } from 'react';
 import { AuthContext } from '../../context/AuthContext';
-import { UserPlus, KeyRound, Ban, CheckCircle } from 'lucide-react';
+import { UserPlus, KeyRound, Ban, CheckCircle, Edit2 } from 'lucide-react';
 
 export default function Staff() {
   const { token, user } = useContext(AuthContext);
@@ -11,6 +11,7 @@ export default function Staff() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState('STAFF');
+  const [editingStaff, setEditingStaff] = useState(null);
 
   const fetchStaff = async () => {
     const res = await fetch('/api/staff', {
@@ -18,36 +19,60 @@ export default function Staff() {
     });
     if (res.ok) {
       const data = await res.json();
-     setStaffss(data.documents || []);
+   setStaffList(data.staff || []);
     }
   };
+  const openEditModal = (staff) => {
+  setEditingStaff(staff);
+  setName(staff.name);
+  setEmail(staff.email);
+  setPassword('');
+  setRole(staff.role);
+  setIsModalOpen(true);
+};
 
   useEffect(() => {
     fetchStaff();
   }, [token]);
+const handleSave = async (e) => {
+  e.preventDefault();
 
-  const handleCreate = async (e) => {
-    e.preventDefault();
-    const res = await fetch('/api/staff', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`
-      },
-      body: JSON.stringify({ name, email, password, role })
-    });
+  const isEditing = !!editingStaff;
 
-    if (res.ok) {
-      setIsModalOpen(false);
-      setName('');
-      setEmail('');
-      setPassword('');
-      fetchStaff();
-    } else {
-      const err = await res.json();
-      alert(err.error || 'Failed to create staff member');
-    }
-  };
+  const url = isEditing
+    ? `/api/staff/${editingStaff.id}`
+    : '/api/staff';
+
+  const method = isEditing ? 'PUT' : 'POST';
+
+  const body = isEditing
+    ? { name, email, role }
+    : { name, email, password, role };
+
+  const res = await fetch(url, {
+    method,
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`
+    },
+    body: JSON.stringify(body)
+  });
+
+  if (res.ok) {
+    setIsModalOpen(false);
+    setEditingStaff(null);
+    setName('');
+    setEmail('');
+    setPassword('');
+    setRole('STAFF');
+    fetchStaff();
+  } else {
+    const err = await res.json();
+    alert(err.error || 'Failed to save staff account');
+  }
+};
+ 
+
 
   const toggleStatus = async (s) => {
     const nextStatus = s.status === 'ACTIVE' ? 'DISABLED' : 'ACTIVE';
@@ -127,6 +152,14 @@ export default function Staff() {
                   <td>
                     <div style={{ display: 'flex', gap: '0.4rem' }}>
                       <button
+                      onClick={() => openEditModal(s)}
+                      className="btn btn-primary"
+                      style={{ padding: '0.3rem 0.6rem', fontSize: '0.75rem' }}
+                      title="Edit Staff"
+                      >
+                      <Edit2 size={14} />
+                      </button>
+                      <button
                         onClick={() => handleResetPassword(s.id, s.name)}
                         className="btn btn-secondary"
                         style={{ padding: '0.3rem 0.6rem', fontSize: '0.75rem' }}
@@ -157,7 +190,7 @@ export default function Staff() {
         <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000, padding: '1rem' }}>
           <div className="card" style={{ width: '100%', maxWidth: '480px' }}>
             <h3 style={{ marginBottom: '1.25rem', color: 'var(--primary)' }}>Add Authorized Staff</h3>
-            <form onSubmit={handleCreate}>
+           <form onSubmit={handleSave}>
               <div className="form-group">
                 <label>Staff Full Name *</label>
                 <input type="text" required className="form-control" value={name} onChange={e => setName(e.target.value)} />

@@ -102,7 +102,7 @@ export default function Settings() {
     setSavingPassword(true);
 
     try {
-      const res = await fetch('/api/auth/change-password', {
+     const res = await fetch(`${import.meta.env.VITE_API_URL}/auth/change-password`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

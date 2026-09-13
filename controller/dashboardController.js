@@ -44,7 +44,7 @@ const recentActivities = db.prepare(`
   recentActivities
   
 });
-  } catch (error) {i
+  } catch (error) {
     console.error('Dashboard overview error:', error);
 
     return res.status(500).json({

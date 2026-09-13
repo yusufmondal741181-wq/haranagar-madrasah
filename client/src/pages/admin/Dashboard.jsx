@@ -15,8 +15,12 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch(`${import.meta.env.VITE_API_URL}/dashboard/overview`, {
-      headers: { Authorization: `Bearer ${token}` }
+    const apiBase = window.location.hostname === 'localhost'
+  ? 'http://localhost:5000'
+  : 'https://haranagar-madrasah.onrender.com';
+
+fetch(`${apiBase}/api/dashboard/overview`, {
+headers: { Authorization: `Bearer ${token}` }
     })
       .then(res => res.json())
       .then(resData => {
