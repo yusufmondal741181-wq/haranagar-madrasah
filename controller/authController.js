@@ -21,8 +21,8 @@ exports.login = (req, res) => {
     if (user.status !== 'ACTIVE') {
       return res.status(403).json({ error: 'Your account is disabled. Please contact the Super Admin.' });
     }
-console.log('CHANGE PASSWORD USER:', req.user.id, req.user.email);
-console.log('LOGIN USER:', user.id, user.email);
+
+   console.log('LOGIN USER:', user.id, user.email);
     const isMatch = bcrypt.compareSync(password, user.password_hash);
     if (!isMatch) {
       return res.status(401).json({ error: 'Invalid credentials. Please verify your email and password.' });
