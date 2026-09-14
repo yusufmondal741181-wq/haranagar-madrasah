@@ -81,20 +81,40 @@ const handleSave = async (e) => {
   }
 };
  
+const toggleStatus = async (s) => {
+  const nextStatus = s.status === 'ACTIVE' ? 'DISABLED' : 'ACTIVE';
 
+  const apiBase = window.location.hostname === 'localhost'
+    ? 'http://localhost:5000'
+    : 'https://haranagar-madrasah.onrender.com';
 
-  const toggleStatus = async (s) => {
-    const nextStatus = s.status === 'ACTIVE' ? 'DISABLED' : 'ACTIVE';
-    const res = await fetch(`/api/staff/${s.id}`, {
+  try {
+    const res = await fetch(`${apiBase}/api/staff/${s.id}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`
       },
-      body: JSON.stringify({ status: nextStatus })
+      body: JSON.stringify({
+        name: s.name,
+        email: s.email,
+        role: s.role,
+        status: nextStatus
+      })
     });
-    if (res.ok) fetchStaff();
-  };
+
+    const data = await res.json();
+
+    if (res.ok) {
+      fetchStaff();
+    } else {
+      alert(data.error || 'Failed to change staff status');
+    }
+  } catch (error) {
+    console.error(error);
+    alert('Server connection failed');
+  }
+};
 
   const handleResetPassword = async (id, staffName) => {
     const newPassword = prompt(`Enter new password for ${staffName} (min 8 characters):`);
