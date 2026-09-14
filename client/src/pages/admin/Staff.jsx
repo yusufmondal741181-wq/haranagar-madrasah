@@ -39,9 +39,13 @@ const handleSave = async (e) => {
 
   const isEditing = !!editingStaff;
 
+  const apiBase = window.location.hostname === 'localhost'
+    ? 'http://localhost:5000'
+    : 'https://haranagar-madrasah.onrender.com';
+
   const url = isEditing
-    ? `/api/staff/${editingStaff.id}`
-    : '/api/staff';
+    ? `${apiBase}/api/staff/${editingStaff.id}`
+    : `${apiBase}/api/staff`;
 
   const method = isEditing ? 'PUT' : 'POST';
 
