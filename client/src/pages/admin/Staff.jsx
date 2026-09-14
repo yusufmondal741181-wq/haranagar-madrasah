@@ -12,16 +12,21 @@ export default function Staff() {
   const [password, setPassword] = useState('');
   const [role, setRole] = useState('STAFF');
   const [editingStaff, setEditingStaff] = useState(null);
-
   const fetchStaff = async () => {
-    const res = await fetch('/api/staff', {
+    const apiBase = window.location.hostname === 'localhost'
+      ? 'http://localhost:5000'
+      : 'https://haranagar-madrasah.onrender.com';
+
+    const res = await fetch(`${apiBase}/api/staff`, {
       headers: { Authorization: `Bearer ${token}` }
     });
+
     if (res.ok) {
       const data = await res.json();
-   setStaffList(data.staff || []);
+      setStaffList(data.staff || []);
     }
   };
+    
   const openEditModal = (staff) => {
   setEditingStaff(staff);
   setName(staff.name);
