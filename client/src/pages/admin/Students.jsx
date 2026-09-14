@@ -50,7 +50,13 @@ export default function Students() {
 
   const handleSave = async (e) => {
     e.preventDefault();
-    const url = editingStudent ? `/api/students/${editingStudent.id}` : '/api/students';
+    const apiBase = window.location.hostname === 'localhost'
+  ? 'http://localhost:5000'
+  : 'https://haranagar-madrasah.onrender.com';
+
+const url = editingStudent
+  ? `${apiBase}/api/students/${editingStudent.id}`
+  : `${apiBase}/api/students`;
     const method = editingStudent ? 'PUT' : 'POST';
 
     const res = await fetch(url, {
