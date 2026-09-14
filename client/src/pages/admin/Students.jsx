@@ -40,10 +40,17 @@ export default function Students() {
     ? 'http://localhost:5000'
     : 'https://haranagar-madrasah.onrender.com';
 
-  const res = await fetch(`${apiBase}/api/students?${params.toString()}`, {
-    headers: { Authorization: `Bearer ${token}` }
-  });
- }
+ const res = await fetch(`${apiBase}/api/students?${params.toString()}&_=${Date.now()}`, {
+  headers: { Authorization: `Bearer ${token}` }
+});
+
+if (res.ok) {
+  const data = await res.json();
+  setStudents(data.students || []);
+}
+    
+  
+}
   useEffect(() => {
     fetchStudents();
   }, [search, className, session]);
