@@ -30,21 +30,20 @@ export default function Students() {
     status: 'Active'
   });
 
-  const fetchStudents = async () => {
-    const params = new URLSearchParams();
-    if (search) params.append('search', search);
-    if (className) params.append('className', className);
-    if (session) params.append('academicSession', session);
+ const fetchStudents = async () => {
+  const params = new URLSearchParams();
+  if (search) params.append('search', search);
+  if (className) params.append('className', className);
+  if (session) params.append('academicSession', session);
 
-    const res = await fetch(`/api/students?${params.toString()}`, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    if (res.ok) {
-      const data = await res.json();
-      setStudents(data.students || []);
-    }
-  };
+  const apiBase = window.location.hostname === 'localhost'
+    ? 'http://localhost:5000'
+    : 'https://haranagar-madrasah.onrender.com';
 
+  const res = await fetch(`${apiBase}/api/students?${params.toString()}`, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+ }
   useEffect(() => {
     fetchStudents();
   }, [search, className, session]);
