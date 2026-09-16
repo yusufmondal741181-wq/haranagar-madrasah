@@ -29,7 +29,11 @@ export default function Settings() {
 
   const loadSettings = async () => {
     try {
-      const res = await fetch('/api/settings', {
+      const apiBase = window.location.hostname === 'localhost'
+  ? 'http://localhost:5000'
+  : 'https://haranagar-madrasah.onrender.com';
+
+const res = await fetch(`${apiBase}/api/settings`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -63,22 +67,37 @@ export default function Settings() {
     setLoading(true);
 
     try {
-      const res = await fetch('/api/settings', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(form),
-      });
+      const apiBase = window.location.hostname === 'localhost'
+    ? 'http://localhost:5000'
+    : 'https://haranagar-madrasah.onrender.com';
 
-      const data = await res.json();
+  const res = await fetch(`${apiBase}/api/settings`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(form),
+  });
 
-      if (!res.ok) {
-        throw new Error(data.error || 'Failed to save settings');
-      }
+      const text = await res.text();
 
-      alert('Settings saved successfully.');
+if (!res.ok) {
+  let errorMessage = 'Failed to save settings';
+
+  if (text) {
+    try {
+      const data = JSON.parse(text);
+      errorMessage = data.error || errorMessage;
+    } catch {
+      errorMessage = text;
+    }
+  }
+
+  throw new Error(errorMessage);
+}
+
+alert('Settings saved successfully.');
     } catch (error) {
       alert(error.message);
     } finally {
