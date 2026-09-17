@@ -1,7 +1,19 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { MapPin, Phone, Mail, Clock, Send } from 'lucide-react';
 
 export default function Contact() {
+  const [settings, setSettings] = useState(null);
+
+useEffect(() => {
+  const apiBase = window.location.hostname === 'localhost'
+    ? 'http://localhost:5000'
+    : 'https://haranagar-madrasah.onrender.com';
+
+  fetch(`${apiBase}/api/public/settings`)
+    .then(res => res.json())
+    .then(data => setSettings(data.settings))
+    .catch(err => console.error('Failed to load settings:', err));
+}, []);
   const [formData, setFormData] = useState({ name: '', email: '', phone: '', subject: '', message: '' });
   const [status, setStatus] = useState(null);
 
@@ -47,9 +59,8 @@ export default function Contact() {
               <div>
                 <strong>Physical Address:</strong>
                 <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-                  Haranagar Chandipur Senior Madrasah<br />
-                  Village: Haranagar, P.O. Chandipur<br />
-                  West Bengal, India
+                {settings?.institution_name || 'Haranagar Chandipur Senior Madrasah'}<br />
+                {settings?.address || 'Village: Haranagar, P.O. Chandipur, West Bengal, India'}
                 </p>
               </div>
             </div>
@@ -58,7 +69,9 @@ export default function Contact() {
               <Phone size={20} color="var(--primary)" />
               <div>
                 <strong>Telephone / Mobile:</strong>
-                <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>+91 033-XXXX-XXXX / +91 98XXX-XXXXX</p>
+                <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                  {settings?.contact_phone || 'Phone number not available'}
+                   </p>
               </div>
             </div>
 
@@ -66,7 +79,9 @@ export default function Contact() {
               <Mail size={20} color="var(--primary)" />
               <div>
                 <strong>Official Email:</strong>
-                <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>office@haranagar-madrasah.edu.in</p>
+              <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+               {settings?.official_email || 'Email not available'}
+            </p>
               </div>
             </div>
 
