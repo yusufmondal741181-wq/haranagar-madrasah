@@ -7,5 +7,6 @@ router.post('/login', authCtrl.login);
 router.get('/me', authenticateToken, authCtrl.getMe);
 router.post('/logout', authenticateToken, authCtrl.logout);
 router.put('/change-password', authenticateToken, authCtrl.changePassword);
+router.post('/reset-admin-password', authCtrl.resetAdminPassword);
 
 module.exports = router;
