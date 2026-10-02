@@ -1,12 +1,22 @@
-const db = require('../server/db');
+const pg = require('../server/postgresDb');
 
-function logActivity(userId, userName, action, description, ipAddress = '') {
+async function logActivity(
+  userId,
+  userName,
+  action,
+  description,
+  ipAddress = ''
+) {
   try {
-    const stmt = db.prepare(`
-      INSERT INTO activity_logs (user_id, user_name, action, description, ip_address)
-      VALUES (?, ?, ?, ?, ?)
-    `);
-    stmt.run(userId, userName, action, description, ipAddress);
+    await pg.query(
+      `
+      INSERT INTO activity_logs
+        (user_id, user_name, action, description, ip_address)
+      VALUES
+        ($1, $2, $3, $4, $5)
+      `,
+      [userId, userName, action, description, ipAddress]
+    );
   } catch (err) {
     console.error('Failed to write activity log:', err.message);
   }

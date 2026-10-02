@@ -1,12 +1,18 @@
-const db = require('../server/db');
+const pg = require('../server/postgresDb');
 const { logActivity } = require('../middleware/logger');
 
 // Get Settings (Public)
-exports.getSettings = (req, res) => {
+exports.getSettings = async (req, res) => {
   try {
-    const rows = db.prepare('SELECT key, value FROM settings').all();
-    const settings = {};
-    rows.forEach(r => { settings[r.key] = r.value; });
+    const result = await pg.query(
+  'SELECT key, value FROM settings'
+);
+
+const settings = {};
+
+result.rows.forEach(r => {
+  settings[r.key] = r.value;
+});
     return res.json({ settings });
   } catch (error) {
     return res.status(500).json({ error: 'Failed to load institutional settings.' });
@@ -14,21 +20,21 @@ exports.getSettings = (req, res) => {
 };
 
 // Update Settings (Super Admin Only)
-exports.updateSettings = (req, res) => {
+  exports.updateSettings = async (req, res) => {
   try {
-    const updateStmt = db.prepare(`
-      INSERT INTO settings (key, value, updated_at) 
-      VALUES (?, ?, CURRENT_TIMESTAMP)
-      ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = CURRENT_TIMESTAMP
-    `);
-
-    const updateTx = db.transaction((settingsObj) => {
-      for (const [key, value] of Object.entries(settingsObj)) {
-        updateStmt.run(key, String(value));
-      }
-    });
-
-    updateTx(req.body);
+    for (const [key, value] of Object.entries(req.body)) {
+  await pg.query(
+    `
+    INSERT INTO settings (key, value, updated_at)
+    VALUES ($1, $2, CURRENT_TIMESTAMP)
+    ON CONFLICT (key)
+    DO UPDATE SET
+      value = EXCLUDED.value,
+      updated_at = CURRENT_TIMESTAMP
+    `,
+    [key, String(value)]
+  );
+}
 
     logActivity(req.user.id, req.user.name, 'SETTINGS_UPDATED', 'Updated institutional website settings');
 

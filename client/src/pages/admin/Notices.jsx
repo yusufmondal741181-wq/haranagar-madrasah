@@ -13,15 +13,24 @@ export default function Notices() {
   const [isPublished, setIsPublished] = useState(true);
   const [file, setFile] = useState(null);
 
-  const fetchNotices = async () => {
-    const res = await fetch('https://haranagar-madrasah.onrender.com/api/notices', {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    if (res.ok) {
-      const data = await res.json();
-      setNotices(data.notices);
+ const fetchNotices = async () => {
+  const apiBase = window.location.hostname === 'localhost'
+    ? 'http://localhost:5000'
+    : 'https://haranagar-madrasah.onrender.com';
+
+  const res = await fetch(`${apiBase}/api/notices`, {
+    headers: {
+      Authorization: `Bearer ${token}`
     }
-  };
+  });
+
+  if (res.ok) {
+    const data = await res.json();
+    setNotices(data.notices);
+  } else {
+    console.error('Failed to fetch notices');
+  }
+};
 
   useEffect(() => {
     fetchNotices();
@@ -44,16 +53,6 @@ const res = await fetch(`${apiBase}/api/notices`, {
   headers: { Authorization: `Bearer ${token}` },
   body: formData
 });
-   
-
-
-
-
-
-
-
-
-
     if (res.ok) {
       setIsModalOpen(false);
       setTitle('');
@@ -66,22 +65,47 @@ const res = await fetch(`${apiBase}/api/notices`, {
     }
   };
 
-  const handleTogglePublish = async (id) => {
-    const res = await fetch(`/api/notices/${id}/toggle-publish`, {
-      method: 'PATCH',
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    if (res.ok) fetchNotices();
-  };
+ const handleTogglePublish = async (id) => {
+  const apiBase = window.location.hostname === 'localhost'
+    ? 'http://localhost:5000'
+    : 'https://haranagar-madrasah.onrender.com';
 
-  const handleDelete = async (id, title) => {
-    if (!window.confirm(`Delete notice "${title}" permanently?`)) return;
-    const res = await fetch(`/api/notices/${id}`, {
-      method: 'DELETE',
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    if (res.ok) fetchNotices();
-  };
+  const res = await fetch(`${apiBase}/api/notices/${id}/toggle`, {
+    method: 'PATCH',
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
+
+  if (res.ok) {
+    fetchNotices();
+  } else {
+    const err = await res.json();
+    alert(err.error || 'Failed to update notice status');
+  }
+};
+
+ const handleDelete = async (id, title) => {
+  if (!window.confirm(`Delete notice "${title}" permanently?`)) return;
+
+  const apiBase = window.location.hostname === 'localhost'
+    ? 'http://localhost:5000'
+    : 'https://haranagar-madrasah.onrender.com';
+
+  const res = await fetch(`${apiBase}/api/notices/${id}`, {
+    method: 'DELETE',
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
+
+  if (res.ok) {
+    fetchNotices();
+  } else {
+    const err = await res.json();
+    alert(err.error || 'Failed to delete notice');
+  }
+};
 
   return (
     <div>

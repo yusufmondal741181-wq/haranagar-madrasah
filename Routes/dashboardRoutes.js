@@ -5,5 +5,6 @@ const dashboardCtrl = require('../controller/dashboardController');
 const { authenticateToken } = require('../middleware/auth');
 
 router.get('/overview', authenticateToken, dashboardCtrl.getOverview);
+router.get('/activity-logs', authenticateToken, dashboardCtrl.getActivityLogs);
 
 module.exports = router;

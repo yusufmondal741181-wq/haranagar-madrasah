@@ -4,7 +4,7 @@ const bcrypt = require('bcryptjs');
 const fs = require('fs');
 require('dotenv').config();
 
-const dbPath = path.join(__dirname, 'madrasah.sqlite');
+const dbPath = process.env.DB_PATH || path.join(__dirname, 'madrasah.sqlite');
 const db = new Database(dbPath);
 
 // Enable Foreign Keys & WAL mode for performance

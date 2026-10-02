@@ -1,41 +1,74 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const db = require('../server/db');
+const pg = require('../server/postgresDb');
 const { JWT_SECRET } = require('../middleware/auth');
 const { logActivity } = require('../middleware/logger');
 
-exports.login = (req, res) => {
+exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
     if (!email || !password) {
-      return res.status(400).json({ error: 'Please provide both email/username and password.' });
+      return res.status(400).json({
+        error: 'Please provide both email/username and password.'
+      });
     }
 
-    const user = db.prepare('SELECT * FROM users WHERE email = ? COLLATE NOCASE').get(email.trim());
+    const result = await pg.query(
+      'SELECT * FROM users WHERE LOWER(email) = LOWER($1)',
+      [email.trim()]
+    );
+
+    const user = result.rows[0];
 
     if (!user) {
-      return res.status(401).json({ error: 'Invalid credentials. Please verify your email and password.' });
+      return res.status(401).json({
+        error: 'Invalid credentials. Please verify your email and password.'
+      });
     }
 
     if (user.status !== 'ACTIVE') {
-      return res.status(403).json({ error: 'Your account is disabled. Please contact the Super Admin.' });
+      return res.status(403).json({
+        error: 'Your account is disabled. Please contact the Super Admin.'
+      });
     }
 
-   console.log('LOGIN USER:', user.id, user.email);
-    const isMatch = bcrypt.compareSync(password, user.password_hash);
+    const isMatch = bcrypt.compareSync(
+      password,
+      user.password_hash
+    );
+
     if (!isMatch) {
-      return res.status(401).json({ error: 'Invalid credentials. Please verify your email and password.' });
+      return res.status(401).json({
+        error: 'Invalid credentials. Please verify your email and password.'
+      });
     }
 
     const token = jwt.sign(
-      { id: user.id, email: user.email, role: user.role },
+      {
+        id: user.id,
+        email: user.email,
+        role: user.role
+      },
       JWT_SECRET,
-      { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
+      {
+        expiresIn: process.env.JWT_EXPIRES_IN || '7d'
+      }
     );
 
-    const clientIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress || '';
-    logActivity(user.id, user.name, 'LOGIN', `Staff user ${user.name} logged into the system.`, clientIp);
+    const clientIp =
+      req.headers['x-forwarded-for'] ||
+      req.socket.remoteAddress ||
+      '';
+
+    logActivity(
+      user.id,
+      user.name,
+      'LOGIN',
+      `Staff user ${user.name} logged into the system.`,
+      clientIp
+    );
 
     return res.json({
       message: 'Login successful.',
@@ -47,9 +80,13 @@ exports.login = (req, res) => {
         role: user.role
       }
     });
+
   } catch (error) {
     console.error('Login error:', error);
-    return res.status(500).json({ error: 'Internal server authentication error.' });
+
+    return res.status(500).json({
+      error: 'Internal server authentication error.'
+    });
   }
 };
 
@@ -63,8 +100,8 @@ exports.logout = (req, res) => {
   }
   return res.json({ message: 'Logged out successfully.' });
 };
-// Change Password
-exports.changePassword = (req, res) => {
+// Change Password//
+exports.changePassword = async (req, res) => {
   try {
     const { current_password, new_password } = req.body;
 
@@ -80,9 +117,12 @@ exports.changePassword = (req, res) => {
       });
     }
 
-    const user = db
-      .prepare('SELECT * FROM users WHERE id = ?')
-      .get(req.user.id);
+    const result = await pg.query(
+      'SELECT * FROM users WHERE id = $1',
+      [req.user.id]
+    );
+
+    const user = result.rows[0];
 
     if (!user) {
       return res.status(404).json({
@@ -103,9 +143,10 @@ exports.changePassword = (req, res) => {
 
     const newPasswordHash = bcrypt.hashSync(new_password, 10);
 
-    db.prepare(
-      'UPDATE users SET password_hash = ? WHERE id = ?'
-    ).run(newPasswordHash, req.user.id);
+    await pg.query(
+      'UPDATE users SET password_hash = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+      [newPasswordHash, req.user.id]
+    );
 
     logActivity(
       req.user.id,
@@ -120,8 +161,10 @@ exports.changePassword = (req, res) => {
 
   } catch (error) {
     console.error('Change password error:', error);
+
     return res.status(500).json({
       error: 'Failed to change password.'
     });
   }
 };
+

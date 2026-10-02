@@ -6,14 +6,18 @@ export default function ActivityLogs() {
   const { token } = useContext(AuthContext);
   const [logs, setLogs] = useState([]);
 
-  useEffect(() => {
-    fetch('/api/dashboard/activity-logs', {
-      headers: { Authorization: `Bearer ${token}` }
-    })
-      .then(res => res.json())
-      .then(setLogs)
-      .catch(console.error);
-  }, [token]);
+ useEffect(() => {
+  const apiBase = window.location.hostname === 'localhost'
+    ? 'http://localhost:5000'
+    : 'https://haranagar-madrasah.onrender.com';
+
+  fetch(`${apiBase}/api/dashboard/activity-logs`, {
+    headers: { Authorization: `Bearer ${token}` }
+  })
+    .then(res => res.json())
+    .then(setLogs)
+    .catch(console.error);
+}, [token]);
 
   return (
     <div>
@@ -37,7 +41,7 @@ export default function ActivityLogs() {
               {logs.map(log => (
                 <tr key={log.id}>
                   <td style={{ fontSize: '0.8rem', whiteSpace: 'nowrap' }}>{log.created_at}</td>
-                  <td>{log.user_name ? `${log.user_name} (${log.user_email})` : 'Public Visitor / System'}</td>
+                 <td>{log.user_name || 'Public Visitor / System'}</td>
                   <td>
                     <span className="badge badge-warning" style={{ fontSize: '0.7rem' }}>
                       {log.action}
