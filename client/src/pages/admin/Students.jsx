@@ -10,6 +10,9 @@ export default function Students() {
   const [session, setSession] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingStudent, setEditingStudent] = useState(null);
+  const [photo, setPhoto] = useState(null);
+  const [selectedStudent, setSelectedStudent] = useState(null);
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
 
   const [form, setForm] = useState({
     student_id: '',
@@ -33,8 +36,8 @@ export default function Students() {
  const fetchStudents = async () => {
   const params = new URLSearchParams();
   if (search) params.append('search', search);
-  if (className) params.append('className', className);
-  if (session) params.append('academicSession', session);
+  if (className) params.append('student_class', className);
+  if (session) params.append('academic_session', session);
 
   const apiBase = window.location.hostname === 'localhost'
     ? 'http://localhost:5000'
@@ -55,48 +58,88 @@ if (res.ok) {
     fetchStudents();
   }, [search, className, session]);
 
-  const handleSave = async (e) => {
-    e.preventDefault();
-    const apiBase = window.location.hostname === 'localhost'
-  ? 'http://localhost:5000'
-  : 'https://haranagar-madrasah.onrender.com';
+ const handleSave = async (e) => {
+  e.preventDefault();
 
-const url = editingStudent
-  ? `${apiBase}/api/students/${editingStudent.id}`
-  : `${apiBase}/api/students`;
-    const method = editingStudent ? 'PUT' : 'POST';
+  const apiBase = window.location.hostname === 'localhost'
+    ? 'http://localhost:5000'
+    : 'https://haranagar-madrasah.onrender.com';
+
+  const url = editingStudent
+    ? `${apiBase}/api/students/${editingStudent.id}`
+    : `${apiBase}/api/students`;
+
+  const method = editingStudent ? 'PUT' : 'POST';
+
+  try {
+    const formData = new FormData();
+
+    Object.entries(form).forEach(([key, value]) => {
+      formData.append(key, value ?? '');
+    });
+
+    if (photo) {
+      formData.append('photo', photo);
+    }
 
     const res = await fetch(url, {
       method,
       headers: {
-        'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`
       },
-      body: JSON.stringify(form)
+      body: formData
     });
 
     if (res.ok) {
       setIsModalOpen(false);
       setEditingStudent(null);
+      setPhoto(null);
       fetchStudents();
     } else {
       const err = await res.json();
       alert(err.error || 'Operation failed');
     }
-  };
+  } catch (error) {
+    console.error('Save student error:', error);
+    alert('Failed to save student.');
+  }
+};
+const handleDelete = async (id, name) => {
+  if (
+    !window.confirm(
+      `Are you sure you want to permanently delete student record: ${name}?`
+    )
+  ) return;
 
-  const handleDelete = async (id, name) => {
-    if (!window.confirm(`Are you sure you want to permanently delete student record: ${name}?`)) return;
+  try {
+    const apiBase =
+      window.location.hostname === 'localhost'
+        ? 'http://localhost:5000'
+        : 'https://haranagar-madrasah.onrender.com';
 
-    const res = await fetch(`/api/students/${id}`, {
+    const res = await fetch(`${apiBase}/api/students/${id}`, {
       method: 'DELETE',
-      headers: { Authorization: `Bearer ${token}` }
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
     });
-    if (res.ok) fetchStudents();
-  };
+
+    if (res.ok) {
+      fetchStudents();
+    } else {
+      const err = await res.json();
+      alert(err.error || 'Failed to delete student.');
+    }
+  } catch (error) {
+    console.error('Delete student error:', error);
+    alert('Failed to delete student.');
+  }
+};
+
 
   const openAddModal = () => {
     setEditingStudent(null);
+    setPhoto(null);
     setForm({
       student_id: `STU-${Date.now().toString().slice(-4)}`,
       name: '',
@@ -118,25 +161,90 @@ const url = editingStudent
     setIsModalOpen(true);
   };
 
-  const openEditModal = (s) => {
-    setEditingStudent(s);
-    setForm({ ...s });
-    setIsModalOpen(true);
-  };
+ const openEditModal = (s) => {
+  setEditingStudent(s);
+  setPhoto(null);
+  setForm({ ...s });
+  setIsModalOpen(true);
+};
+
+
+
+const handleViewStudent = async (id) => {
+  try {
+    const apiBase =
+      window.location.hostname === 'localhost'
+        ? 'http://localhost:5000'
+        : 'https://haranagar-madrasah.onrender.com';
+
+    const res = await fetch(`${apiBase}/api/students/${id}`, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      throw new Error(data.error || 'Failed to load student details.');
+    }
+
+    setSelectedStudent(data.student);
+    setIsDetailsModalOpen(true);
+
+  } catch (error) {
+    console.error('Student details error:', error);
+    alert(error.message);
+  }
+};
+
+
 
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
         <h2 style={{ fontSize: '1.5rem', color: 'var(--primary)' }}>Student Registry Management</h2>
         <div style={{ display: 'flex', gap: '0.75rem' }}>
-          <a
-            href="/api/students/export/csv"
-            className="btn btn-secondary"
-            download
-            style={{ fontSize: '0.85rem' }}
-          >
-            <Download size={15} /> Export CSV
-          </a>
+          <button
+  onClick={async () => {
+    try {
+      const token = localStorage.getItem('token');
+
+      const apiBase = window.location.hostname === 'localhost'
+  ? 'http://localhost:5000'
+  : 'https://haranagar-madrasah.onrender.com';
+
+const response = await fetch(`${apiBase}/api/students/export`, {
+  headers: {
+    Authorization: `Bearer ${token}`
+  }
+});
+
+      if (!response.ok) {
+        throw new Error('Failed to export students.');
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'students_export.csv';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Export error:', error);
+      alert('Failed to export students.');
+    }
+  }}
+  className="btn btn-secondary"
+  style={{ fontSize: '0.85rem' }}
+>
+  <Download size={15} /> Export CSV
+</button>
           <button onClick={openAddModal} className="btn btn-primary" style={{ fontSize: '0.85rem' }}>
             <UserPlus size={15} /> Add New Student
           </button>
@@ -155,9 +263,14 @@ const url = editingStudent
           />
         </div>
         <div>
-          <select className="form-control" value={className} onChange={e => setClassName(e.target.value)}>
+                  <select
+            className="form-control"
+            value={className}
+            onChange={e => setClassName(e.target.value)}
+          >
             <option value="">All Classes</option>
-            {['V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'].map(c => (
+
+            {[ 'PP','I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'].map(c => (
               <option key={c} value={c}>Class {c}</option>
             ))}
           </select>
@@ -199,15 +312,36 @@ const url = editingStudent
               ) : (
                 students.map(s => (
                   <tr key={s.id}>
-                    <td style={{ fontWeight: 600 }}>{s.student_id}</td>
+                                        <td>
+                      <button
+                        type="button"
+                        onClick={() => handleViewStudent(s.id)}
+                        style={{
+                          border: 'none',
+                          background: 'none',
+                          padding: 0,
+                          color: 'var(--primary)',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          textDecoration: 'underline'
+                        }}
+                      >
+                        {s.student_id}
+                      </button>
+                    </td>
                     <td>{s.name}</td>
                     <td>{s.father_name || 'N/A'}</td>
                     <td>Class {s.class} ({s.section || 'A'})</td>
                     <td>{s.roll_number || 'N/A'}</td>
                     <td>{s.phone || 'N/A'}</td>
                     <td>
-                      <span className={`badge ${s.status === 'ACTIVE' ? 'badge-success' : 'badge-danger'}`}>
-                        {s.status}
+                      <span
+                      className={`badge ${
+                        s.status === 'Active'
+                          ? 'badge-success'
+                          : 'badge-danger'
+                                     }`}
+>                              {s.status}
                       </span>
                     </td>
                     <td>
@@ -227,6 +361,185 @@ const url = editingStudent
           </table>
         </div>
       </div>
+      {/* Student Details Modal */}
+{isDetailsModalOpen && selectedStudent && (
+  <div
+    style={{
+      position: 'fixed',
+      inset: 0,
+      backgroundColor: 'rgba(0,0,0,0.5)',
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center',
+      zIndex: 1000,
+      padding: '1rem'
+    }}
+  >
+    <div
+      className="card"
+      style={{
+        width: '100%',
+        maxWidth: '750px',
+        maxHeight: '90vh',
+        overflowY: 'auto'
+      }}
+    >
+      <h3
+        style={{
+          marginBottom: '1.25rem',
+          color: 'var(--primary)'
+        }}
+      >
+        Student Details
+      </h3>
+
+      {/* Photo + Basic Information */}
+      <div
+        style={{
+          display: 'flex',
+          gap: '2rem',
+          marginBottom: '1.5rem',
+          alignItems: 'flex-start'
+        }}
+      >
+        {/* Photo */}
+        <div style={{ minWidth: '150px', textAlign: 'center' }}>
+          {selectedStudent.photo ? (
+            <img
+              src={`${
+                window.location.hostname === 'localhost'
+                  ? 'http://localhost:5000'
+                  : 'https://haranagar-madrasah.onrender.com'
+              }/uploads/public/photos/${selectedStudent.photo}`}
+              alt={selectedStudent.name}
+              style={{
+                width: '150px',
+                height: '180px',
+                objectFit: 'cover',
+                borderRadius: '8px',
+                border: '1px solid #ddd'
+              }}
+            />
+          ) : (
+            <div
+              style={{
+                width: '150px',
+                height: '180px',
+                border: '1px solid #ddd',
+                borderRadius: '8px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#888'
+              }}
+            >
+              No Photo
+            </div>
+          )}
+        </div>
+
+        {/* Basic Details */}
+        <div style={{ flex: 1 }}>
+          <p><strong>Student ID:</strong> {selectedStudent.student_id || 'N/A'}</p>
+          <p><strong>Name:</strong> {selectedStudent.name || 'N/A'}</p>
+          <p><strong>Father's Name:</strong> {selectedStudent.father_name || 'N/A'}</p>
+          <p><strong>Mother's Name:</strong> {selectedStudent.mother_name || 'N/A'}</p>
+          <p><strong>Guardian Name:</strong> {selectedStudent.guardian_name || 'N/A'}</p>
+          <p><strong>Date of Birth:</strong> {selectedStudent.date_of_birth || 'N/A'}</p>
+          <p><strong>Gender:</strong> {selectedStudent.gender || 'N/A'}</p>
+        </div>
+      </div>
+
+      {/* Academic Details */}
+      <h4 style={{ color: 'var(--primary)', marginBottom: '1rem' }}>
+        Academic Details
+      </h4>
+
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: '1fr 1fr',
+          gap: '0.8rem',
+          marginBottom: '1.5rem'
+        }}
+      >
+        <div>
+          <strong>Class:</strong> {selectedStudent.class || 'N/A'}
+        </div>
+
+        <div>
+          <strong>Section:</strong> {selectedStudent.section || 'N/A'}
+        </div>
+
+        <div>
+          <strong>Roll Number:</strong> {selectedStudent.roll_number || 'N/A'}
+        </div>
+
+        <div>
+          <strong>Admission Number:</strong> {selectedStudent.admission_number || 'N/A'}
+        </div>
+
+        <div>
+          <strong>Admission Date:</strong> {selectedStudent.admission_date || 'N/A'}
+        </div>
+
+        <div>
+          <strong>Academic Session:</strong> {selectedStudent.academic_session || 'N/A'}
+        </div>
+
+        <div>
+          <strong>Status:</strong> {selectedStudent.status || 'N/A'}
+        </div>
+      </div>
+
+      {/* Contact Details */}
+      <h4 style={{ color: 'var(--primary)', marginBottom: '1rem' }}>
+        Contact Details
+      </h4>
+
+      <div style={{ marginBottom: '1.5rem' }}>
+        <p>
+          <strong>Phone:</strong> {selectedStudent.phone || 'N/A'}
+        </p>
+
+        <p>
+          <strong>Address:</strong> {selectedStudent.address || 'N/A'}
+        </p>
+      </div>
+
+      {/* Buttons */}
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'flex-end',
+          gap: '0.75rem'
+        }}
+      >
+        <button
+          type="button"
+          className="btn btn-secondary"
+          onClick={() => {
+            setIsDetailsModalOpen(false);
+            setSelectedStudent(null);
+          }}
+        >
+          Close
+        </button>
+
+        <button
+          type="button"
+          className="btn btn-primary"
+          onClick={() => {
+            setIsDetailsModalOpen(false);
+            openEditModal(selectedStudent);
+          }}c
+        >
+          Edit Student
+        </button>
+      </div>
+    </div>
+  </div>
+)}
 
       {/* Add/Edit Modal */}
       {isModalOpen && (
@@ -256,9 +569,9 @@ const url = editingStudent
                 <div className="form-group">
                   <label>Class *</label>
                   <select className="form-control" value={form.class} onChange={e => setForm({ ...form, class: e.target.value })}>
-                    {['V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'].map(c => (
-                      <option key={c} value={c}>Class {c}</option>
-                    ))}
+                   {[ 'PP','I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'].map(c => (
+                                <option key={c} value={c}>Class {c}</option>
+                              ))}
                   </select>
                 </div>
                 <div className="form-group">
@@ -286,16 +599,24 @@ const url = editingStudent
                   <select className="form-control" value={form.gender} onChange={e => setForm({ ...form, gender: e.target.value })}>
                     <option value="Male">Male</option>
                     <option value="Female">Female</option>
-                    <option value="Others">Other</option>
+                    <option value="Other">Other</option>
                   </select>
+                </div><div className="form-group">
+                 <label>Student Photo</label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="form-control"
+                    onChange={e => setPhoto(e.target.files[0])}
+                  />
                 </div>
-                <div className="form-group">
+                 <div className="form-group">
                   <label>Status</label>
                   <select className="form-control" value={form.status} onChange={e => setForm({ ...form, status: e.target.value })}>
-                    <option value="Active">Active</option>
-                    <option value="Transferred">Tranasferred</option>
-                    <option value="Passed out">Passed out</option>
-                    <option value="Suspended">Suspended</option>
+                   <option value="Active">Active</option>
+                    <option value="Inactive">Inactive</option>
+                  <option value="Passed">Passed</option>
+                  <option value="Transferred">Transferred</option>
                   </select>
                 </div>
               </div>
