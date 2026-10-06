@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useContext } from 'react';
 import { AuthContext } from '../../context/AuthContext';
-import { UserPlus, Search, Download, Trash2, Edit2 } from 'lucide-react';
+import { UserPlus, Search, Download, Trash2, Edit2, Upload } from 'lucide-react';
 
 export default function Students() {
   const { token } = useContext(AuthContext);
@@ -11,6 +11,8 @@ export default function Students() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingStudent, setEditingStudent] = useState(null);
   const [photo, setPhoto] = useState(null);
+  const [importing, setImporting] = useState(false);
+  const [importResult, setImportResult] = useState(null);
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
 
@@ -102,6 +104,54 @@ if (res.ok) {
   } catch (error) {
     console.error('Save student error:', error);
     alert('Failed to save student.');
+  }
+};
+const handleUDISEImport = async (e) => {
+  const file = e.target.files[0];
+
+  if (!file) return;
+
+  setImporting(true);
+  setImportResult(null);
+
+  try {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const apiBase =
+      window.location.hostname === 'localhost'
+        ? 'http://localhost:5000'
+        : 'https://haranagar-madrasah.onrender.com';
+
+    const res = await fetch(`${apiBase}/api/students/import/udise`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`
+      },
+      body: formData
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      alert(data.error || 'UDISE import failed.');
+      return;
+    }
+
+    setImportResult(data.summary);
+
+    alert(
+      `Import completed.\n\nImported: ${data.summary.imported}\nSkipped: ${data.summary.skipped}\nInvalid: ${data.summary.invalid}`
+    );
+
+    fetchStudents();
+
+  } catch (error) {
+    console.error('UDISE import error:', error);
+    alert('Failed to import UDISE Excel file.');
+  } finally {
+    setImporting(false);
+    e.target.value = '';
   }
 };
 const handleDelete = async (id, name) => {
@@ -244,6 +294,25 @@ const response = await fetch(`${apiBase}/api/students/export`, {
   style={{ fontSize: '0.85rem' }}
 >
   <Download size={15} /> Export CSV
+  <label
+  className="btn btn-secondary"
+  style={{
+    fontSize: '0.85rem',
+    cursor: importing ? 'not-allowed' : 'pointer',
+    opacity: importing ? 0.6 : 1
+  }}
+>
+  <Upload size={15} />
+  {importing ? 'Importing...' : 'Import UDISE Excel'}
+
+  <input
+    type="file"
+    accept=".xlsx,.xls"
+    onChange={handleUDISEImport}
+    disabled={importing}
+    style={{ display: 'none' }}
+  />
+</label>
 </button>
           <button onClick={openAddModal} className="btn btn-primary" style={{ fontSize: '0.85rem' }}>
             <UserPlus size={15} /> Add New Student
@@ -293,6 +362,7 @@ const response = await fetch(`${apiBase}/api/students/export`, {
             <thead>
               <tr>
                 <th>Student ID</th>
+                <th>PEN</th>
                 <th>Name</th>
                 <th>Father's Name</th>
                 <th>Class / Sec</th>
@@ -312,7 +382,7 @@ const response = await fetch(`${apiBase}/api/students/export`, {
               ) : (
                 students.map(s => (
                   <tr key={s.id}>
-                                        <td>
+                    <td>
                       <button
                         type="button"
                         onClick={() => handleViewStudent(s.id)}
@@ -329,6 +399,7 @@ const response = await fetch(`${apiBase}/api/students/export`, {
                         {s.student_id}
                       </button>
                     </td>
+                    <td>{s.pen || 'N/A'}</td>
                     <td>{s.name}</td>
                     <td>{s.father_name || 'N/A'}</td>
                     <td>Class {s.class} ({s.section || 'A'})</td>

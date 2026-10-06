@@ -4,6 +4,7 @@ const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 require('dotenv').config();
+const studentImportRoutes = require('../Routes/studentImportRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -43,6 +44,7 @@ app.use('/api/staff', require('../Routes/staffRoutes'));
 app.use('/api/settings', require('../Routes/settingsRoutes'));
 app.use('/api/activity', require('../Routes/activityRoutes'));
 app.use('/api/dashboard', require('../Routes/dashboardRoutes'));
+app.use('/api/students/import', studentImportRoutes);
 
 
 
