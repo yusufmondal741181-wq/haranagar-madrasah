@@ -103,9 +103,7 @@ if (existingResult.rows.length > 0) {
     error: 'This email is already in use by another user.'
   });
 }
-    if (existing) {
-      return res.status(400).json({ error: 'This email is already in use by another user.' });
-    }
+   
 
     // Safety: prevent disabling self
     if (req.user.id === targetUser.id && status === 'DISABLED') {

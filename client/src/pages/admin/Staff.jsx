@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useContext } from 'react';
 import { AuthContext } from '../../context/AuthContext';
-import { UserPlus, KeyRound, Ban, CheckCircle, Edit2 } from 'lucide-react';
+import { UserPlus, KeyRound, Ban, CheckCircle, Edit2, Trash2 } from 'lucide-react';
 
 export default function Staff() {
   const { token, user } = useContext(AuthContext);
@@ -115,6 +115,38 @@ const toggleStatus = async (s) => {
     alert('Server connection failed');
   }
 };
+const handleDelete = async (s) => {
+  const confirmed = window.confirm(
+    `Are you sure you want to permanently delete ${s.name}'s account?`
+  );
+
+  if (!confirmed) return;
+
+  const apiBase = window.location.hostname === 'localhost'
+    ? 'http://localhost:5000'
+    : 'https://haranagar-madrasah.onrender.com';
+
+  try {
+    const res = await fetch(`${apiBase}/api/staff/${s.id}`, {
+      method: 'DELETE',
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+
+    const data = await res.json();
+
+    if (res.ok) {
+      alert('Staff account deleted successfully.');
+      fetchStaff();
+    } else {
+      alert(data.error || 'Failed to delete staff account.');
+    }
+  } catch (error) {
+    console.error(error);
+    alert('Server connection failed.');
+  }
+};
 
   const handleResetPassword = async (id, staffName) => {
     const newPassword = prompt(`Enter new password for ${staffName} (min 8 characters):`);
@@ -196,16 +228,29 @@ const toggleStatus = async (s) => {
                       >
                         <KeyRound size={14} />
                       </button>
-                      {s.id !== user.id && (
-                        <button
-                          onClick={() => toggleStatus(s)}
-                          className={s.status === 'ACTIVE' ? 'btn btn-danger' : 'btn btn-secondary'}
-                          style={{ padding: '0.3rem 0.6rem', fontSize: '0.75rem' }}
-                          title={s.status === 'ACTIVE' ? 'Disable Account' : 'Enable Account'}
-                        >
-                          {s.status === 'ACTIVE' ? <Ban size={14} /> : <CheckCircle size={14} />}
-                        </button>
-                      )}
+                    
+                    
+                 {s.id !== user.id && (
+  <>
+                              <button
+                                onClick={() => toggleStatus(s)}
+                                className={s.status === 'ACTIVE' ? 'btn btn-danger' : 'btn btn-secondary'}
+                                style={{ padding: '0.3rem 0.6rem', fontSize: '0.75rem' }}
+                                title={s.status === 'ACTIVE' ? 'Disable Account' : 'Enable Account'}
+                              >
+                                {s.status === 'ACTIVE' ? <Ban size={14} /> : <CheckCircle size={14} />}
+                              </button>
+
+                              <button
+                                onClick={() => handleDelete(s)}
+                                className="btn btn-danger"
+                                style={{ padding: '0.3rem 0.6rem', fontSize: '0.75rem' }}
+                                title="Delete Staff Account"
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            </>
+                          )}
                     </div>
                   </td>
                 </tr>
