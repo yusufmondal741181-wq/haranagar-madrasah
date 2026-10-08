@@ -100,10 +100,17 @@ export default function Documents() {
 
   const handleDelete = async (id, title) => {
     if (!window.confirm(`Delete document "${title}" permanently?`)) return;
-    const res = await fetch(`/api/documents/${id}`, {
-      method: 'DELETE',
-      headers: { Authorization: `Bearer ${token}` }
-    });
+    const apiBase =
+  window.location.hostname === 'localhost'
+    ? 'http://localhost:5000'
+    : 'https://haranagar-madrasah.onrender.com';
+
+const res = await fetch(`${apiBase}/api/documents/${id}`, {
+  method: 'DELETE',
+  headers: {
+    Authorization: `Bearer ${token}`
+  }
+});
     if (res.ok) fetchDocuments();
   };
 
