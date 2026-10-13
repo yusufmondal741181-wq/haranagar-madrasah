@@ -1,11 +1,12 @@
 import React, { useEffect, useState, useContext } from 'react';
 import { AuthContext } from '../../context/AuthContext';
-import { Plus, Trash2, Globe, EyeOff } from 'lucide-react';
+import { Plus, Trash2, Globe, EyeOff, Pencil } from 'lucide-react';
 
 export default function Notices() {
   const { token } = useContext(AuthContext);
   const [notices, setNotices] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingNotice, setEditingNotice] = useState(null);
 
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
@@ -35,6 +36,19 @@ export default function Notices() {
   useEffect(() => {
     fetchNotices();
   }, [token]);
+  const handleEditNotice = (notice) => {
+  setEditingNotice(notice);
+  setTitle(notice.title);
+  setContent(notice.content);
+  setPublishDate(
+    notice.publish_date
+      ? String(notice.publish_date).split('T')[0]
+      : ''
+  );
+  setIsPublished(notice.published === 1);
+  setFile(null);
+  setIsModalOpen(true);
+};
 
   const handleCreateNotice = async (e) => {
     e.preventDefault();
@@ -47,22 +61,34 @@ export default function Notices() {
 const apiBase = window.location.hostname === 'localhost'
   ? 'http://localhost:5000'
   : 'https://haranagar-madrasah.onrender.com';
+  const url = editingNotice
+  ? `${apiBase}/api/notices/${editingNotice.id}`
+  : `${apiBase}/api/notices`;
 
-const res = await fetch(`${apiBase}/api/notices`, {
-  method: 'POST',
-  headers: { Authorization: `Bearer ${token}` },
+const res = await fetch(url, {
+  method: editingNotice ? 'PUT' : 'POST',
+  headers: {
+    Authorization: `Bearer ${token}`
+  },
   body: formData
 });
-    if (res.ok) {
-      setIsModalOpen(false);
-      setTitle('');
-      setContent('');
-      setFile(null);
-      fetchNotices();
-    } else {
-      const err = await res.json();
-      alert(err.error || 'Failed to create notice');
-    }
+
+if (res.ok) {
+  setIsModalOpen(false);
+  setEditingNotice(null);
+  setTitle('');
+  setContent('');
+  setPublishDate(new Date().toISOString().split('T')[0]);
+  setIsPublished(true);
+  setFile(null);
+  fetchNotices();
+} else {
+  const err = await res.json();
+  alert(err.error || 'Failed to save notice');
+}
+
+
+   
   };
 
  const handleTogglePublish = async (id) => {
@@ -70,12 +96,19 @@ const res = await fetch(`${apiBase}/api/notices`, {
     ? 'http://localhost:5000'
     : 'https://haranagar-madrasah.onrender.com';
 
-  const res = await fetch(`${apiBase}/api/notices/${id}/toggle`, {
-    method: 'PATCH',
-    headers: {
-      Authorization: `Bearer ${token}`
-    }
-  });
+  
+const url = editingNotice
+  ? `${apiBase}/api/notices/${editingNotice.id}`
+  : `${apiBase}/api/notices`;
+
+const res = await fetch(url, {
+  method: editingNotice ? 'PUT' : 'POST',
+  headers: {
+    Authorization: `Bearer ${token}`
+  },
+  body: formData
+});
+
 
   if (res.ok) {
     fetchNotices();
@@ -141,6 +174,16 @@ const res = await fetch(`${apiBase}/api/notices`, {
                   </td>
                   <td>
                     <div style={{ display: 'flex', gap: '0.5rem' }}>
+                      ```jsx
+                    <button
+                      onClick={() => handleEditNotice(n)}
+                      className="btn btn-secondary"
+                      style={{ padding: '0.3rem 0.6rem' }}
+                      title="Edit notice"
+                    >
+                      <Pencil size={14} />
+                    </button>
+
                       <button
                         onClick={() => handleTogglePublish(n.id)}
                         className="btn btn-secondary"
@@ -168,7 +211,9 @@ const res = await fetch(`${apiBase}/api/notices`, {
       {isModalOpen && (
         <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000, padding: '1rem' }}>
           <div className="card" style={{ width: '100%', maxWidth: '550px' }}>
-            <h3 style={{ marginBottom: '1.25rem', color: 'var(--primary)' }}>Publish Institutional Notice</h3>
+           <h3 style={{ marginBottom: '1.25rem', color: 'var(--primary)' }}>
+  {editingNotice ? 'Edit Notice' : 'Publish Institutional Notice'}
+</h3>
             <form onSubmit={handleCreateNotice}>
               <div className="form-group">
                 <label>Notice Title *</label>
@@ -192,12 +237,52 @@ const res = await fetch(`${apiBase}/api/notices`, {
                 </div>
               </div>
               <div className="form-group">
-                <label>Attachment (PDF or Image, max 15MB)</label>
-                <input type="file" className="form-control" onChange={e => setFile(e.target.files[0])} />
+                <label>Attachment (PDF only, max 10MB)</label>
+                
+<input
+  type="file"
+  accept="application/pdf,.pdf"
+  className="form-control"
+  onChange={e => {
+    const selectedFile = e.target.files[0];
+
+    if (!selectedFile) {
+      setFile(null);
+      return;
+    }
+
+    if (selectedFile.type !== 'application/pdf') {
+      alert('Only PDF files are allowed.');
+      e.target.value = '';
+      setFile(null);
+      return;
+    }
+
+    if (selectedFile.size > 10 * 1024 * 1024) {
+      alert('File size must not exceed 10 MB.');
+      e.target.value = '';
+      setFile(null);
+      return;
+    }
+
+    setFile(selectedFile);
+  }}
+/>
+
               </div>
 
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '1.5rem' }}>
-                <button type="button" onClick={() => setIsModalOpen(false)} className="btn btn-secondary">
+                <button type="button" 
+onClick={() => {
+  setIsModalOpen(false);
+  setEditingNotice(null)
+  setTitle('');
+  setContent('');
+  setPublishDate(new Date().toISOString().split('T')[0]);
+  setIsPublished(true);
+  setFile(null);
+}}
+ className="btn btn-secondary">
                   Cancel
                 </button>
                 <button type="submit" className="btn btn-primary">

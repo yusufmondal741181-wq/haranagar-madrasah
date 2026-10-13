@@ -58,7 +58,11 @@ fetch(`${apiBase}/api/public/notices`)
               {notice.attachment && (
                 <div>
                   <a
-                  href={`${window.location.hostname === 'localhost' ? 'http://localhost:5000' : 'https://haranagar-madrasah.onrender.com'}/uploads/public/attachments/${notice.attachment}`}
+                 
+                
+href={`https://jcmgetslezsdngxtrnum.supabase.co/storage/v1/object/public/madrasah-files/${notice.attachment}`}
+
+
                     download
                     className="btn btn-secondary"
                     style={{ fontSize: '0.85rem' }}

@@ -1,3 +1,4 @@
+const supabase = require('../server/supabase');
 const pg = require('../server/postgresDb');
 const { logActivity } = require('../middleware/logger');
 
@@ -49,7 +50,10 @@ exports.getAllNotices = async (req, res) => {
 };
 
 // Create Notice
+
 exports.createNotice = async (req, res) => {
+  let uploadedPath = null;
+
   try {
     const { title, content, publish_date, published } = req.body;
 
@@ -59,16 +63,39 @@ exports.createNotice = async (req, res) => {
       });
     }
 
-    const attachmentFilename = req.file ? req.file.filename : null;
-    const originalName = req.file ? req.file.originalname : null;
+    let attachmentFilename = null;
+    let originalName = null;
+
+    if (req.file) {
+      const path = require('path');
+      const crypto = require('crypto');
+
+      const ext = path.extname(req.file.originalname).toLowerCase();
+      const safeName = `${Date.now()}-${crypto.randomBytes(8).toString('hex')}${ext}`;
+      uploadedPath = `notice-attachments/${safeName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('madrasah-files')
+        .upload(uploadedPath, req.file.buffer, {
+          contentType: req.file.mimetype,
+          upsert: false
+        });
+
+      if (uploadError) {
+        throw uploadError;
+      }
+
+      attachmentFilename = uploadedPath;
+      originalName = req.file.originalname;
+    }
 
     const isPub =
-  published === '1' ||
-  published === 1 ||
-  published === 'true' ||
-  published === true
-    ? 1
-    : 0;
+      published === '1' ||
+      published === 1 ||
+      published === 'true' ||
+      published === true
+        ? 1
+        : 0;
 
     const result = await pg.query(
       `
@@ -108,17 +135,27 @@ exports.createNotice = async (req, res) => {
       message: 'Notice created successfully.',
       noticeId
     });
-
   } catch (error) {
+    if (uploadedPath) {
+      await supabase.storage
+        .from('madrasah-files')
+        .remove([uploadedPath])
+        .catch(() => {});
+    }
+
     console.error('createNotice error:', error);
 
     return res.status(500).json({
-      error: 'Failed to save notice: ' + error.message
+      error: 'Failed to save notice.'
     });
   }
 };
+
 // Update Notice
+
 exports.updateNotice = async (req, res) => {
+  let uploadedPath = null;
+
   try {
     const noticeResult = await pg.query(
       'SELECT * FROM notices WHERE id = $1',
@@ -135,21 +172,45 @@ exports.updateNotice = async (req, res) => {
 
     const { title, content, publish_date, published } = req.body;
 
-    const attachmentFilename = req.file
-      ? req.file.filename
-      : notice.attachment;
+    if (!title || !content) {
+      return res.status(400).json({
+        error: 'Notice title and content are required.'
+      });
+    }
 
-    const originalName = req.file
-      ? req.file.originalname
-      : notice.attachment_original_name;
+    let attachmentFilename = notice.attachment;
+    let originalName = notice.attachment_original_name;
+
+    if (req.file) {
+      const path = require('path');
+      const crypto = require('crypto');
+
+      const ext = path.extname(req.file.originalname).toLowerCase();
+      const safeName = `${Date.now()}-${crypto.randomBytes(8).toString('hex')}${ext}`;
+      uploadedPath = `notice-attachments/${safeName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('madrasah-files')
+        .upload(uploadedPath, req.file.buffer, {
+          contentType: req.file.mimetype,
+          upsert: false
+        });
+
+      if (uploadError) {
+        throw uploadError;
+      }
+
+      attachmentFilename = uploadedPath;
+      originalName = req.file.originalname;
+    }
 
     const isPub =
-  published === '1' ||
-  published === 1 ||
-  published === 'true' ||
-  published === true
-    ? 1
-    : 0;
+      published === '1' ||
+      published === 1 ||
+      published === 'true' ||
+      published === true
+        ? 1
+        : 0;
 
     await pg.query(
       `
@@ -168,11 +229,26 @@ exports.updateNotice = async (req, res) => {
         content.trim(),
         attachmentFilename,
         originalName,
-        publish_date,
+        publish_date || notice.publish_date,
         isPub,
         req.params.id
       ]
     );
+
+    // Remove old attachment only after the database update succeeds.
+    if (req.file && notice.attachment) {
+      const oldPath = notice.attachment;
+
+      if (oldPath.startsWith('notice-attachments/')) {
+        const { error: removeError } = await supabase.storage
+          .from('madrasah-files')
+          .remove([oldPath]);
+
+        if (removeError) {
+          console.error('Old notice attachment cleanup failed:', removeError);
+        }
+      }
+    }
 
     logActivity(
       req.user.id,
@@ -184,8 +260,17 @@ exports.updateNotice = async (req, res) => {
     return res.json({
       message: 'Notice updated successfully.'
     });
-
   } catch (error) {
+    if (uploadedPath) {
+      const { error: cleanupError } = await supabase.storage
+        .from('madrasah-files')
+        .remove([uploadedPath]);
+
+      if (cleanupError) {
+        console.error('Uploaded attachment cleanup failed:', cleanupError);
+      }
+    }
+
     console.error('updateNotice error:', error);
 
     return res.status(500).json({
@@ -193,6 +278,7 @@ exports.updateNotice = async (req, res) => {
     });
   }
 };
+
 
 // Toggle Publish Status
 exports.togglePublishNotice = async (req, res) => {
