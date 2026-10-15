@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import madrasahImage from './public/madrasah.jpeg';
 import { Link } from 'react-router-dom';
 import { Bell, FileText, BookOpen, Award, ArrowRight } from 'lucide-react';
 
@@ -23,6 +24,17 @@ export default function Home() {
       {/* Hero Welcome Section */}
       <section style={{ backgroundColor: 'var(--primary)', color: 'white', padding: '4.5rem 0', textAlign: 'center' }}>
         <div className="container">
+          <img
+          src={madrasahImage}
+          alt="Haranagar Chandipur Senior Madrasah"
+          style={{
+            width: '100%',
+            maxHeight: '350px',
+            objectFit: 'cover',
+            borderRadius: '12px',
+            marginBottom: '2rem'
+  }}
+/>
           <span style={{ color: 'var(--accent-light)', textTransform: 'uppercase', letterSpacing: '1.5px', fontWeight: 700, fontSize: '0.85rem' }}>
             Official Institutional Portal
           </span>
